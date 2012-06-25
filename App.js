@@ -5,6 +5,8 @@ Ext.define('CustomApp', {
 
     leafNodes :[],
     orphanNodes :[],
+    parentHash:{},
+
 
     launch: function() {
 
@@ -23,9 +25,17 @@ Ext.define('CustomApp', {
         });
     },
 
-    _getStoriesInRelease:function(release) {
+
+    _reset:function() {
+        this.parentHash = {};
         this.orphanNodes = [];
         this.leafNodes = [];
+        this._outstandingQueries = 0;
+    },
+
+    _getStoriesInRelease:function(release) {
+        this._reset();
+        this._outstandingQueries++;
 
         var store = Ext.create("Rally.data.WsapiDataStore", {
             model:"story",
@@ -40,37 +50,60 @@ Ext.define('CustomApp', {
             listeners:{
                 load:function(store, records) {
                     this.leafNodes = records;
-                    this._getParents(records);
+                    this._processResults(records);
                 },
                 scope:this
             }
         });
     },
 
-    _getParents:function(children) {
+    _storeInParentHash:function(parentRef, child) {
+        if (this.parentHash[parentRef.getRelativeUri()]) {
+            this.parentHash[parentRef.getRelativeUri()].push(child);
+        }
+        else {
+            this.parentHash[parentRef.getRelativeUri()] = [child];
+        }
+    },
+
+    _outstandingQueries:0,
+
+    _processResults:function(children) {
+        this._outstandingQueries--;
         if (!children.length) {
             return;
         }
         var portfolioItems = [];
         var stories = [];
-        Ext.each(children, function(c) {
-            var parent = c.get('Parent') || c.get('PortfolioItem');
+        Ext.each(children, function(child) {
+            var parent = child.get('Parent') || child.get('PortfolioItem');
             if (parent) {
-                var ref = new Rally.util.Ref(parent._ref);
-                if(ref.getType() === "hierarchicalrequirement"){
-                    stories.push(parent);
+                var parentRef = new Rally.util.Ref(parent._ref);
+                if (parentRef.getType() === "hierarchicalrequirement") {
+                    stories.push(parentRef.getRelativeUri());
                 }
-                else{
-                    portfolioItems.push(parent);
+                else {
+                    portfolioItems.push(parentRef.getRelativeUri());
                 }
+                this._storeInParentHash(parentRef, child);
 
             }
-        });
+        }, this);
+        if (stories.length) {
+            this._outstandingQueries++;
+            this._getStories(stories);
+        }
 
-
+        if (portfolioItems.length) {
+            this._outstandingQueries++;
+            this._getPortfolioItems(portfolioItems);
+        }
+        if(!this._outstandingQueries){
+            debugger;
+        }
     },
 
-    _getPortfolioItems:function() {
+    _getPortfolioItems:function(portfolioItems) {
 
         var filter = Ext.create('Rally.data.QueryFilter', {
             property: 'Parent',
@@ -95,15 +128,37 @@ Ext.define('CustomApp', {
             listeners:{
                 load:function(store, records) {
                     this.leafNodes = records;
-                    this._getParents(records);
+                    this._processResults(records);
                 },
                 scope:this
             }
         });
     },
 
-    _getStories:function() {
+    _getStories:function(stories) {
 
+        var filter = Ext.create('Rally.data.QueryFilter', {
+            property: 'Parent',
+            value:Rally.util.Ref.getRelativeUri(stories.pop());
+        });
+        while (stories.length) {
+            filter = filter.or({
+                property: 'Parent',
+                value: Rally.util.Ref.getRelativeUri(stories.pop());
+            });
+        }
+        var store = Ext.create("Rally.data.WsapiDataStore", {
+            model:"story",
+            autoLoad:true,
+            limit:Infinity,
+            filters: filter,
+            listeners:{
+                load:function(store, records) {
+                    this._processResults(records);
+                },
+                scope:this
+            }
+        });
     }
 
 });
