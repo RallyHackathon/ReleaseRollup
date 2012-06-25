@@ -7,7 +7,7 @@ task :default => [:debug, :build]
 
 desc "Create an app with the provided name (and optional SDK version)"
 task :new, :app_name, :sdk_version do |t, args|
-  args.with_defaults(:sdk_version => "2.0p")
+  args.with_defaults(:sdk_version => "2.0p2")
   Dir.chdir(Rake.original_dir)
 
   config = Rally::AppSdk::AppConfig.new(args.app_name, args.sdk_version)
@@ -192,8 +192,8 @@ module Rally
     class AppConfig
       SDK_RELATIVE_URL = "/apps"
       SDK_ABSOLUTE_URL = "https://rally1.rallydev.com/apps"
-      SDK_FILE = "sdk.js?wsapiVersion=1.33"
-      SDK_DEBUG_FILE = "sdk-debug.js?wsapiVersion=1.33"
+      SDK_FILE = "sdk.js"
+      SDK_DEBUG_FILE = "sdk-debug.js"
 
       attr_reader :name, :sdk_version
       attr_accessor :javascript, :css, :class_name
@@ -382,8 +382,6 @@ JAVASCRIPT_BLOCK
     <title>APP_TITLE</title>
 
     <script type="text/javascript" src="APP_SDK_PATH"></script>
-    <script src="http://code.highcharts.com/highcharts.js"></script>
-    <script src="http://code.highcharts.com/modules/exporting.js"></script>
     <script type="text/javascript">
         Rally.onReady(function() {
             Rally.loadScripts([
@@ -409,8 +407,6 @@ STYLE_BLOCK
     <title>APP_TITLE</title>
 
     <script type="text/javascript" src="APP_SDK_PATH"></script>
-    <script src="http://code.highcharts.com/highcharts.js"></script>
-    <script src="http://code.highcharts.com/modules/exporting.js"></script>
     <script type="text/javascript">
         Rally.onReady(function() {
 #{JAVASCRIPT_INLINE_BLOCK_TPL}        });
