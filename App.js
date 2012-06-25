@@ -6,6 +6,7 @@ Ext.define('CustomApp', {
     leafNodes :[],
     orphanNodes :[],
     parentHash:{},
+    processedRefs :{},
 
 
     launch: function() {
@@ -70,12 +71,11 @@ Ext.define('CustomApp', {
 
     _processResults:function(children) {
         this._outstandingQueries--;
-        if (!children.length) {
-            return;
-        }
+
         var portfolioItems = [];
         var stories = [];
         Ext.each(children, function(child) {
+            this.processedRefs[Rally.util.Ref.getRelativeUri(child)] = true;
             var parent = child.get('Parent') || child.get('PortfolioItem');
             if (parent) {
                 var parentRef = new Rally.util.Ref(parent._ref);
@@ -87,54 +87,72 @@ Ext.define('CustomApp', {
                 }
                 this._storeInParentHash(parentRef, child);
             }
-            else{
+            else {
                 this.leafNodes.push(child);
             }
         }, this);
+
+
         if (stories.length) {
-            this._outstandingQueries++;
             this._getStories(stories);
         }
 
-        if (portfolioItems.length) {
-            this._outstandingQueries++;
-            this._getPortfolioItems(portfolioItems);
-        }
         if (!this._outstandingQueries) {
-            debugger;
+            this._display();
         }
     },
 
     _hasNotBeenRetrieved:function(ref) {
-        return !this.parentHash[ref];
+        return !this.processedRefs[ref];
     },
     _getNotRetrieved:function(refs) {
 
         var results = [];
-        Ext.each(refs,function(ref){
-            if(this._hasNotBeenRetrieved(ref)){
+        Ext.each(refs, function(ref) {
+            if (this._hasNotBeenRetrieved(ref)) {
                 results.push(ref);
             }
-        },this);
+        }, this);
         return results;
     },
-    _getStories:function(stories) {
-        stories = this._getNotRetrieved(stories);
-        var filter = Ext.create('Rally.data.QueryFilter', {
-            property: 'Parent',
-            value:Rally.util.Ref.getRelativeUri(stories.pop())
+
+    _getObjectIdsFromRefs:function(refs) {
+        var objectIds = [];
+        Ext.each(refs, function(ref) {
+            objectIds.push(new Rally.util.Ref(ref).getOid());
         });
-        while (stories.length) {
+        return objectIds;
+    },
+
+    _getStories:function(stories) {
+        var context = this.getContext().getDataContext();
+        context.project = undefined;
+        stories = this._getNotRetrieved(stories);
+        if(!stories.length){
+            return;
+        }
+        this._outstandingQueries++;
+        var objectIds = this._getObjectIdsFromRefs(stories);
+
+        var filter = Ext.create('Rally.data.QueryFilter', {
+            property: 'ObjectID',
+            value:objectIds.pop()
+        });
+        while (objectIds.length) {
             filter = filter.or({
-                property: 'Parent',
-                value: Rally.util.Ref.getRelativeUri(stories.pop())
+                property: 'ObjectID',
+                value: objectIds.pop()
             });
         }
+
+        console.log(filter.toString());
+
         var store = Ext.create("Rally.data.WsapiDataStore", {
             model:"story",
             autoLoad:true,
             limit:Infinity,
             filters: filter,
+            context:context,
             listeners:{
                 load:function(store, records) {
                     this._processResults(records);
@@ -145,36 +163,27 @@ Ext.define('CustomApp', {
     },
 
 
-    _getPortfolioItems:function(portfolioItems) {
+    _display:function() {
+        var currentRef;
+        var depth = 0;
+        Ext.each(this.leafNodes, function(record) {
+            this._addOneRef(record, 0);
+        }, this);
+    },
 
-        var filter = Ext.create('Rally.data.QueryFilter', {
-            property: 'Parent',
-            value:Rally.util.Ref.getRelativeUri(refs.pop())
+
+    _addOneRef:function(record, depth) {
+        var currentRef = Rally.util.Ref.getRelativeUri(record.get('_ref'));
+        var childArray = this.parentHash[currentRef];
+        this.add({
+            html:depth +" - "+ record.get("Name")
         });
-        while (refs.length) {
-            filter = filter.or({
-                property: 'Parent',
-                value: Rally.util.Ref.getRelativeUri(refs.pop())
-            });
+        if (childArray) {
+            Ext.each(childArray, function(child) {
+                this._addOneRef(child, depth + 1);
+            }, this);
         }
-        var store = Ext.create("Rally.data.WsapiDataStore", {
-            model:"story",
-            autoLoad:true,
-            limit:Infinity,
-            filters: [
-                {
-                    property: 'Release',
-                    value: release
-                }
-            ],
-            listeners:{
-                load:function(store, records) {
-                    this.leafNodes = records;
-                    this._processResults(records);
-                },
-                scope:this
-            }
-        });
+
     }
 
 });
