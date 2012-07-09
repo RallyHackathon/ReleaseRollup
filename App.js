@@ -93,6 +93,10 @@ Ext.define('CustomApp', {
         }, this);
 
 
+        if (portfolioItems.length) {
+            this._getPortfolioItems(portfolioItems);
+        }
+
         if (stories.length) {
             this._getStories(stories);
         }
@@ -105,6 +109,7 @@ Ext.define('CustomApp', {
     _hasNotBeenRetrieved:function(ref) {
         return !this.processedRefs[ref];
     },
+
     _getNotRetrieved:function(refs) {
 
         var results = [];
@@ -145,8 +150,6 @@ Ext.define('CustomApp', {
             });
         }
 
-        console.log(filter.toString());
-
         var store = Ext.create("Rally.data.WsapiDataStore", {
             model:"story",
             autoLoad:true,
@@ -162,6 +165,41 @@ Ext.define('CustomApp', {
         });
     },
 
+    _getPortfolioItems:function(portfolioItems) {
+        var context = this.getContext().getDataContext();
+        context.project = undefined;
+        portfolioItems = this._getNotRetrieved(portfolioItems);
+        if (!portfolioItems.length) {
+            return;
+        }
+        this._outstandingQueries++;
+        var objectIds = this._getObjectIdsFromRefs(portfolioItems);
+
+        var filter = Ext.create('Rally.data.QueryFilter', {
+            property: 'ObjectID',
+            value:objectIds.pop()
+        });
+        while (objectIds.length) {
+            filter = filter.or({
+                property: 'ObjectID',
+                value: objectIds.pop()
+            });
+        }
+
+        var store = Ext.create("Rally.data.WsapiDataStore", {
+            model:"portfolioitem",
+            autoLoad:true,
+            limit:Infinity,
+            filters: filter,
+            context:context,
+            listeners:{
+                load:function(store, records) {
+                    this._processResults(records);
+                },
+                scope:this
+            }
+        });
+    },
 
     _display:function() {
         var currentRef;
