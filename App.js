@@ -51,7 +51,6 @@ Ext.define('CustomApp', {
             ],
             listeners:{
                 load:function(store, records) {
-                    this.leafNodes = records;
                     this._processResults(records);
                 },
                 scope:this
