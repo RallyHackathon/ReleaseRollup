@@ -37,7 +37,8 @@ Ext.define('CustomApp', {
     _getStoriesInRelease:function(release) {
         this._reset();
         this._outstandingQueries++;
-
+        var context = this.getContext().getDataContext();
+        context.project = undefined;
         var store = Ext.create("Rally.data.WsapiDataStore", {
             model:"story",
             autoLoad:true,
@@ -54,7 +55,8 @@ Ext.define('CustomApp', {
                     this._processResults(records);
                 },
                 scope:this
-            }
+            },
+            context:context
         });
     },
 
