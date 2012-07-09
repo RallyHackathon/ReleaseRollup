@@ -212,9 +212,11 @@ Ext.define('CustomApp', {
 
 
     _addOneRef:function(record, depth) {
+        var nextDepth = depth+1;
         var currentRef = Rally.util.Ref.getRelativeUri(record.get('_ref'));
         var childArray = this.parentHash[currentRef];
         var stars = "";
+        console.log(depth);
         while (depth) {
             stars += "*";
             depth--;
@@ -225,7 +227,7 @@ Ext.define('CustomApp', {
         });
         if (childArray) {
             Ext.each(childArray, function(child) {
-                this._addOneRef(child, depth + 1);
+                this._addOneRef(child, nextDepth);
             }, this);
         }
 
