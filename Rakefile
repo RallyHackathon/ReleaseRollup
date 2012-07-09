@@ -1,7 +1,7 @@
 require 'fileutils'
 
 
-DISABLE_JSLINT = ENV['DISABLE_JSLINT'] == 'true'
+ENABLE_JSLINT = ENV['ENABLE_JSLINT'] == 'false'
 
 task :default => [:debug, :build]
 
@@ -32,9 +32,9 @@ task :clean do
   remove_files Rally::AppSdk::AppTemplateBuilder.get_auto_generated_files
 end
 
-desc "Run jslint on all JavaScript files used by this app, can be disabled by setting DISABLE_JSLINT=true."
+desc "Run jslint on all JavaScript files used by this app, can be enabled by setting ENABLE_JSLINT=true."
 task :jslint do |t|
-  unless DISABLE_JSLINT
+  if ENABLE_JSLINT
     Dir.chdir(Rake.original_dir)
 
     config = get_config_from_file
@@ -382,6 +382,7 @@ JAVASCRIPT_BLOCK
     <title>APP_TITLE</title>
 
     <script type="text/javascript" src="APP_SDK_PATH"></script>
+
     <script type="text/javascript">
         Rally.onReady(function() {
             Rally.loadScripts([
@@ -407,6 +408,7 @@ STYLE_BLOCK
     <title>APP_TITLE</title>
 
     <script type="text/javascript" src="APP_SDK_PATH"></script>
+
     <script type="text/javascript">
         Rally.onReady(function() {
 #{JAVASCRIPT_INLINE_BLOCK_TPL}        });

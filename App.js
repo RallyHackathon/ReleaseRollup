@@ -128,7 +128,7 @@ Ext.define('CustomApp', {
         var context = this.getContext().getDataContext();
         context.project = undefined;
         stories = this._getNotRetrieved(stories);
-        if(!stories.length){
+        if (!stories.length) {
             return;
         }
         this._outstandingQueries++;
@@ -175,8 +175,14 @@ Ext.define('CustomApp', {
     _addOneRef:function(record, depth) {
         var currentRef = Rally.util.Ref.getRelativeUri(record.get('_ref'));
         var childArray = this.parentHash[currentRef];
+        var stars = "";
+        while (depth) {
+            stars += "*";
+            depth--;
+        }
+
         this.add({
-            html:depth +" - "+ record.get("Name")
+            html:stars + "  " + record.get("Name")
         });
         if (childArray) {
             Ext.each(childArray, function(child) {
