@@ -209,7 +209,7 @@ Ext.define('CustomApp', {
         Ext.each(this.leafNodes, function(record) {
             children.push(this._addOneRef(record));
         }, this);
-
+        debugger;
         var store = Ext.create('Ext.data.TreeStore', {
             root: {
                 expanded: true,
@@ -239,17 +239,27 @@ Ext.define('CustomApp', {
 
     _addOneRef:function(record) {
         var currentRef = Rally.util.Ref.getRelativeUri(record.get('_ref'));
+        var points = record.get("PlanEstimate") || 0;
+        var leafCount = 0;
         var childArray = this.parentHash[currentRef];
         var children = [];
         if (childArray) {
             Ext.each(childArray, function(child) {
-                children.push(this._addOneRef(child));
+                var childNode = this._addOneRef(child);
+                points += childNode.points;
+                leafCount += childNode.leafCount;
+                if (childNode.leaf) {
+                    leafCount++;
+                }
+                children.push(childNode);
             }, this);
         }
         return {
-            text:record.get("Name"),
+            text:record.get("Name") + " Points:" + points + " Leaf Count:" + leafCount,
             children:children,
-            leaf:!children.length
+            leaf:!children.length,
+            points:points,
+            leafCount:leafCount
         };
     }
 
