@@ -214,16 +214,22 @@ Ext.define('CustomApp', {
             root: {
                 expanded: true,
                 children: children
-            }
+            },
+            sorters: [
+                {
+                    property: "leaf"
+                }
+            ]
         });
 
-        if(this.tree){
+        if (this.tree) {
             this.tree.destroy();
         }
 
         this.tree = Ext.create('Ext.tree.Panel', {
             store: store,
-            rootVisible: false
+            rootVisible: false,
+            height:900
         });
 
         this.add(this.tree);
