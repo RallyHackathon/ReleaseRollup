@@ -228,7 +228,8 @@
                             {
                                 property: "leaf"
                             }
-                        ]
+                        ],
+                        fields:["name","points","leafCount"]
                     });
             
                     if (this.tree) {
@@ -238,7 +239,28 @@
                     this.tree = Ext.create('Ext.tree.Panel', {
                         store: store,
                         rootVisible: false,
-                        height:900
+                        height:900,
+                        columns: [
+                            {
+                                xtype: 'treecolumn',
+                                text: 'Name',
+                                dataIndex: 'name',
+                                flex:1,
+                                sortable: true
+                            },
+                            {
+                                text: 'Points Shipped in this Release',
+                                dataIndex: 'points',
+                                width:35,
+                                sortable: true
+                            },
+                            {
+                                text: 'Leaf Story Count',
+                                dataIndex: 'leafCount',
+                                width:35,
+                                sortable: true
+                            }
+                        ]
                     });
             
                     this.add(this.tree);
@@ -248,17 +270,28 @@
             
                 _addOneRef:function(record) {
                     var currentRef = Rally.util.Ref.getRelativeUri(record.get('_ref'));
+                    var points = record.get("PlanEstimate") || 0;
+                    var leafCount = 0;
                     var childArray = this.parentHash[currentRef];
                     var children = [];
                     if (childArray) {
                         Ext.each(childArray, function(child) {
-                            children.push(this._addOneRef(child));
+                            var childNode = this._addOneRef(child);
+                            points += childNode.points;
+                            leafCount += childNode.leafCount;
+                            if (childNode.leaf) {
+                                leafCount++;
+                            }
+                            children.push(childNode);
                         }, this);
                     }
                     return {
-                        text:record.get("Name"),
+                        name:record.get("Name") + " Points:" + points + " Leaf Count:" + leafCount,
                         children:children,
-                        leaf:!children.length
+                        leaf:!children.length,
+                        points:points,
+                        leafCount:leafCount,
+                        expanded:true
                     };
                 }
             

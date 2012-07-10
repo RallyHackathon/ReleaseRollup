@@ -3,7 +3,8 @@
     "className": "CustomApp",
     "sdk": "2.0p",
     "javascript": [
-        "App.js"
+        "App.js",
+        "Model.js"
     ],
     "css": [
         "app.css"

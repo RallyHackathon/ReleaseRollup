@@ -209,7 +209,7 @@ Ext.define('CustomApp', {
         Ext.each(this.leafNodes, function(record) {
             children.push(this._addOneRef(record));
         }, this);
-        debugger;
+
         var store = Ext.create('Ext.data.TreeStore', {
             root: {
                 expanded: true,
@@ -219,7 +219,8 @@ Ext.define('CustomApp', {
                 {
                     property: "leaf"
                 }
-            ]
+            ],
+            fields:["name","points","leafCount"]
         });
 
         if (this.tree) {
@@ -229,7 +230,28 @@ Ext.define('CustomApp', {
         this.tree = Ext.create('Ext.tree.Panel', {
             store: store,
             rootVisible: false,
-            height:900
+            height:900,
+            columns: [
+                {
+                    xtype: 'treecolumn',
+                    text: 'Name',
+                    dataIndex: 'name',
+                    flex:1,
+                    sortable: true
+                },
+                {
+                    text: 'Points Shipped in this Release',
+                    dataIndex: 'points',
+                    width:35,
+                    sortable: true
+                },
+                {
+                    text: 'Leaf Story Count',
+                    dataIndex: 'leafCount',
+                    width:35,
+                    sortable: true
+                }
+            ]
         });
 
         this.add(this.tree);
@@ -255,11 +277,12 @@ Ext.define('CustomApp', {
             }, this);
         }
         return {
-            text:record.get("Name") + " Points:" + points + " Leaf Count:" + leafCount,
+            name:record.get("Name") + " Points:" + points + " Leaf Count:" + leafCount,
             children:children,
             leaf:!children.length,
             points:points,
-            leafCount:leafCount
+            leafCount:leafCount,
+            expanded:true
         };
     }
 
