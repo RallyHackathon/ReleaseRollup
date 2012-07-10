@@ -7,7 +7,7 @@ Ext.define('CustomApp', {
     orphanNodes :[],
     parentHash:{},
     processedRefs :{},
-
+    tree:undefined,
 
     launch: function() {
 
@@ -205,32 +205,46 @@ Ext.define('CustomApp', {
     _display:function() {
         var currentRef;
         var depth = 0;
+        var children = [];
         Ext.each(this.leafNodes, function(record) {
-            this._addOneRef(record, 0);
+            children.push(this._addOneRef(record));
         }, this);
+
+        var store = Ext.create('Ext.data.TreeStore', {
+            root: {
+                expanded: true,
+                children: children
+            }
+        });
+
+        if(this.tree){
+            this.tree.destroy();
+        }
+
+        this.tree = Ext.create('Ext.tree.Panel', {
+            store: store,
+            rootVisible: false
+        });
+
+        this.add(this.tree);
+
     },
 
 
-    _addOneRef:function(record, depth) {
-        var nextDepth = depth+1;
+    _addOneRef:function(record) {
         var currentRef = Rally.util.Ref.getRelativeUri(record.get('_ref'));
         var childArray = this.parentHash[currentRef];
-        var stars = "";
-        console.log(depth);
-        while (depth) {
-            stars += "*";
-            depth--;
-        }
-
-        this.add({
-            html:stars + "  " + record.get("Name")
-        });
+        var children = [];
         if (childArray) {
             Ext.each(childArray, function(child) {
-                this._addOneRef(child, nextDepth);
+                children.push(this._addOneRef(child));
             }, this);
         }
-
+        return {
+            text:record.get("Name"),
+            children:children,
+            leaf:!children.length
+        };
     }
 
 });
